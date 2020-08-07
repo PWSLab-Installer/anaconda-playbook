@@ -1,0 +1,63 @@
+- hosts: localhost
+  connection: local
+  vars:
+    
+
+  tasks:
+
+    -   name: Fetch Anaconda Role
+        git:
+            repo: https://github.com/andrewrothstein/ansible-anaconda.git
+            dest: /root/.ansible/roles/pwslab.anaconda
+            force: yes
+
+    -   name: Install Role GLIBC
+        local_action: command ansible-galaxy install -f andrewrothstein.alpine-glibc-shim
+
+    -   name: Install Role Bash
+        local_action: command ansible-galaxy install -f andrewrothstein.bash
+
+    -   name: Install Role Deps
+        local_action: command ansible-galaxy install -f andrewrothstein.unarchive-deps
+
+    -   name: Applying role GLIBC
+        command: mv ~/.ansible/roles/andrewrothstein.alpine-glibc-shim ~/.ansible/roles/pwslab.glibc
+        ignore_errors: yes
+
+    -   name: Applying role bash
+        command: mv ~/.ansible/roles/andrewrothstein.bash ~/.ansible/roles/pwslab.bash
+        ignore_errors: yes
+
+    -   name: Applying role Deps
+        command: mv ~/.ansible/roles/andrewrothstein.unarchive-deps ~/.ansible/roles/pwslab.deps
+        ignore_errors: yes
+
+    -   name: Applying replacement I
+        lineinfile:
+            dest: /root/.ansible/roles/pwslab.anaconda/meta/main.yml
+            regexp: '^(.*)- role: andrewrothstein.alpine-glibc-shim(.*)$'
+            line: '- role: pwslab.glibc'
+            state: present
+
+    -   name: Applying replacement II
+        lineinfile:
+            dest: /root/.ansible/roles/pwslab.anaconda/meta/main.yml
+            regexp: '^(.*)- role: andrewrothstein.bash(.*)$'
+            line: '- role: pwslab.bash'
+            state: present
+
+    -   name: Applying replacement III
+        lineinfile:
+            dest: /root/.ansible/roles/pwslab.anaconda/meta/main.yml
+            regexp: '^(.*)- role: andrewrothstein.unarchive-deps(.*)$'
+            line: '- role: pwslab.deps'
+            state: present
+
+    -   name: Installing Anaconda
+        include_role:
+            name: pwslab.anaconda
+
+    -   name: Add Anaconda $PATH.
+        copy:
+            dest: /etc/profile.d/conda.sh
+            content: 'PATH=$PATH:/usr/local/anaconda/bin:$PATH'
